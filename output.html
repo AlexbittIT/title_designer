@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Титры в эфир</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+    .container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+    .block {
+      position: absolute;
+      left: 50%;
+      bottom: 8%;
+      transform: translate(-50%, 0);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 80%;
+      padding: 0 1em;
+      transition: left 0.1s ease-out, bottom 0.1s ease-out, top 0.1s ease-out;
+    }
+    .block.style-lower { left: 50%; bottom: 8%; top: auto; transform: translate(-50%, 0); }
+    .block.style-upper { left: 50%; top: 8%; bottom: auto; transform: translate(-50%, 0); }
+    .block.style-center { left: 50%; top: 50%; bottom: auto; transform: translate(-50%, -50%); }
+
+    .anim-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .line {
+      text-align: center;
+      line-height: 1.25;
+      max-width: 90%;
+    }
+    .line1 { font-size: clamp(28px, 4.5vw, 72px); font-weight: 700; }
+    .line2 { font-size: clamp(18px, 2.5vw, 42px); font-weight: 500; margin-top: 0.15em; }
+    .line3 { font-size: clamp(14px, 1.8vw, 28px); opacity: 0.95; margin-top: 0.2em; }
+
+    .graphic-box {
+      margin-bottom: 1em;
+      max-width: 40%;
+      max-height: 25vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .graphic-box.align-left { justify-content: flex-start; }
+    .graphic-box.align-right { justify-content: flex-end; }
+    .graphic-box .graphic-inner {
+      transform-origin: center center;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .graphic-box .graphic-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Анимации появления */
+    .anim-wrap.anim-fade {
+      animation: animFade 0.6s ease-out forwards;
+    }
+    .anim-wrap.anim-slideBottom {
+      animation: animSlideBottom 0.6s ease-out forwards;
+    }
+    .anim-wrap.anim-slideTop {
+      animation: animSlideTop 0.6s ease-out forwards;
+    }
+    .anim-wrap.anim-slideLeft {
+      animation: animSlideLeft 0.6s ease-out forwards;
+    }
+    .anim-wrap.anim-slideRight {
+      animation: animSlideRight 0.6s ease-out forwards;
+    }
+    .anim-wrap.anim-scale {
+      animation: animScale 0.5s ease-out forwards;
+    }
+    .anim-wrap.anim-none { animation: none; }
+
+    @keyframes animFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes animSlideBottom {
+      from { opacity: 0; transform: translateY(80px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes animSlideTop {
+      from { opacity: 0; transform: translateY(-80px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes animSlideLeft {
+      from { opacity: 0; transform: translateX(-80px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes animSlideRight {
+      from { opacity: 0; transform: translateX(80px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes animScale {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root" class="container">
+    <div class="block style-lower" id="block">
+      <div class="anim-wrap anim-fade" id="animWrap">
+        <div class="graphic-box" id="graphicWrap"></div>
+        <div class="line line1" id="line1"></div>
+        <div class="line line2" id="line2"></div>
+        <div class="line line3" id="line3"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const root = document.getElementById('root');
+    const block = document.getElementById('block');
+    const animWrap = document.getElementById('animWrap');
+    const line1 = document.getElementById('line1');
+    const line2 = document.getElementById('line2');
+    const line3 = document.getElementById('line3');
+    const graphicWrap = document.getElementById('graphicWrap');
+
+    let lastVisible = false;
+    let lastAnimation = '';
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function render(data) {
+      if (!data.visible) {
+        root.classList.add('hidden');
+        return;
+      }
+      root.classList.remove('hidden');
+      const style = data.style || 'lower';
+      const ox = Number(data.offsetX) || 0;
+      const oy = Number(data.offsetY) || 0;
+      block.className = 'block style-' + style;
+      if (style === 'lower') {
+        block.style.left = (50 + ox) + '%';
+        block.style.bottom = (8 + oy) + '%';
+        block.style.top = 'auto';
+        block.style.transform = 'translate(-50%, 0)';
+      } else if (style === 'upper') {
+        block.style.left = (50 + ox) + '%';
+        block.style.top = (8 + oy) + '%';
+        block.style.bottom = 'auto';
+        block.style.transform = 'translate(-50%, 0)';
+      } else {
+        block.style.left = (50 + ox) + '%';
+        block.style.top = (50 + oy) + '%';
+        block.style.bottom = 'auto';
+        block.style.transform = 'translate(-50%, -50%)';
+      }
+
+      const anim = data.animation || 'fade';
+      if (lastVisible !== true || lastAnimation !== anim) {
+        animWrap.className = 'anim-wrap anim-' + anim;
+      }
+      lastVisible = true;
+      lastAnimation = anim;
+
+      const font = data.fontFamily || 'Segoe UI, Arial, sans-serif';
+      block.style.fontFamily = font;
+      line1.textContent = data.line1 || '';
+      line2.textContent = data.line2 || '';
+      line3.textContent = data.line3 || '';
+
+      if (data.graphic) {
+        const gOx = Number(data.graphicOffsetX) || 0;
+        const gOy = Number(data.graphicOffsetY) || 0;
+        const gScale = (Number(data.graphicScale) || 100) / 100;
+        const gAlign = data.graphicAlign || 'center';
+        graphicWrap.className = 'graphic-box align-' + gAlign;
+        graphicWrap.innerHTML = '<div class="graphic-inner" style="transform: translate(' + gOx + '%, ' + gOy + '%) scale(' + gScale + ');"><img src="' + escapeHtml(data.graphic) + '" alt=""></div>';
+        graphicWrap.classList.remove('hidden');
+      } else {
+        graphicWrap.innerHTML = '';
+        graphicWrap.classList.add('hidden');
+      }
+    }
+
+    function fetchTitres() {
+      fetch('/api/titres')
+        .then(r => r.json())
+        .then(render)
+        .catch(() => {});
+    }
+
+    fetchTitres();
+    setInterval(fetchTitres, 500);
+  </script>
+</body>
+</html>

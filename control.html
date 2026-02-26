@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Панель титров — vMix</title>
+  <style>
+    :root {
+      --bg: #1a1b26;
+      --surface: #24283b;
+      --border: #414868;
+      --text: #c0caf5;
+      --accent: #7aa2f7;
+      --green: #9ece6a;
+      --red: #f7768e;
+      --yellow: #e0af68;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      line-height: 1.5;
+    }
+    .layout {
+      display: flex;
+      height: 100%;
+      gap: 0;
+    }
+    .left {
+      width: 340px;
+      min-width: 340px;
+      overflow-y: auto;
+      padding: 16px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: #0f0f12;
+    }
+    h1 { font-size: 1.25rem; color: #fff; margin-bottom: 4px; }
+    .sub { font-size: 0.8rem; color: var(--border); margin-bottom: 12px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .card h2 {
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      margin-bottom: 3px;
+      color: var(--text);
+    }
+    input[type="text"],
+    input[type="url"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-show { background: var(--green); color: #fff; }
+    .btn-hide { background: var(--red); color: #fff; }
+    .btn-small {
+      padding: 4px 10px;
+      font-size: 0.8rem;
+    }
+    .status { font-size: 0.8rem; color: var(--green); margin-top: 6px; }
+    .status.err { color: var(--red); }
+
+    .presets-list {
+      list-style: none;
+    }
+    .presets-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      background: var(--bg);
+      border-radius: 6px;
+      border: 1px solid transparent;
+    }
+    .presets-list li:hover { border-color: var(--border); }
+    .presets-list .name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.9rem;
+    }
+    .presets-list .actions {
+      display: flex;
+      gap: 4px;
+    }
+    .presets-list .actions button {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+    }
+    .presets-empty {
+      font-size: 0.85rem;
+      color: var(--border);
+      padding: 12px 0;
+    }
+
+    .preview-wrap {
+      width: 100%;
+      max-width: 960px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+      border: 2px solid var(--border);
+    }
+    .preview-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    .preview-label {
+      font-size: 0.85rem;
+      color: var(--border);
+      margin-bottom: 8px;
+    }
+
+    .offset-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .offset-row label { margin-bottom: 2px; }
+    .url-tip { font-size: 0.75rem; color: var(--border); margin-top: -4px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="left">
+      <h1>Титры в эфир</h1>
+      <p class="sub">Заготовки слева. Справа — превью 16:9 как в vMix.</p>
+
+      <div class="card">
+        <h2>Заготовки</h2>
+        <ul class="presets-list" id="presetsList"></ul>
+        <p class="presets-empty" id="presetsEmpty">Нет сохранённых заготовок.</p>
+        <div class="row">
+          <input type="text" id="presetName" placeholder="Название заготовки" style="margin-bottom: 0; flex: 1;">
+          <button class="btn-primary btn-small" id="btnSavePreset">Сохранить</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Текст</h2>
+        <label>Строка 1</label>
+        <input type="text" id="line1" placeholder="Заголовок">
+        <label>Строка 2</label>
+        <input type="text" id="line2" placeholder="Подзаголовок">
+        <label>Строка 3</label>
+        <input type="text" id="line3" placeholder="Доп. текст">
+      </div>
+
+      <div class="card">
+        <h2>Шрифт</h2>
+        <label>Семейство шрифта</label>
+        <select id="fontFamily">
+          <option value="Segoe UI, Arial, sans-serif">Segoe UI</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="'Georgia', serif">Georgia</option>
+          <option value="'Times New Roman', Times, serif">Times New Roman</option>
+          <option value="Verdana, sans-serif">Verdana</option>
+          <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+          <option value="Impact, sans-serif">Impact</option>
+          <option value="'Courier New', monospace">Courier New</option>
+          <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+          <option value="'Open Sans', sans-serif">Open Sans</option>
+          <option value="'Roboto', sans-serif">Roboto</option>
+          <option value="'PT Sans', sans-serif">PT Sans</option>
+          <option value="'Montserrat', sans-serif">Montserrat</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <h2>Графика</h2>
+        <label>URL картинки</label>
+        <input type="url" id="graphic" placeholder="/public/logo.png или https://...">
+        <p class="url-tip">Файлы из папки public: /public/имя.png</p>
+        <label>Положение графики (%)</label>
+        <div class="offset-row">
+          <div>
+            <label>Сдвиг X</label>
+            <input type="number" id="graphicOffsetX" value="0" min="-50" max="50" step="1">
+          </div>
+          <div>
+            <label>Сдвиг Y</label>
+            <input type="number" id="graphicOffsetY" value="0" min="-50" max="50" step="1">
+          </div>
+        </div>
+        <label>Масштаб графики (%)</label>
+        <input type="number" id="graphicScale" value="100" min="10" max="300" step="5">
+        <label>Выравнивание</label>
+        <select id="graphicAlign">
+          <option value="center">По центру</option>
+          <option value="left">Влево</option>
+          <option value="right">Вправо</option>
+        </select>
+        <div class="row">
+          <button type="button" class="btn-small" id="btnCenterGraphic" style="background:var(--border);color:var(--text)">Отцентровать графику</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Положение и анимация</h2>
+        <label>Положение</label>
+        <select id="style">
+          <option value="lower">Внизу</option>
+          <option value="upper">Вверху</option>
+          <option value="center">По центру</option>
+        </select>
+        <label>Анимация появления</label>
+        <select id="animation">
+          <option value="fade">Плавное появление</option>
+          <option value="slideBottom">Снизу вверх</option>
+          <option value="slideTop">Сверху вниз</option>
+          <option value="slideLeft">Слева направо</option>
+          <option value="slideRight">Справа налево</option>
+          <option value="scale">Масштаб</option>
+          <option value="none">Без анимации</option>
+        </select>
+        <label>Сдвиг вручную (%)</label>
+        <div class="offset-row">
+          <div>
+            <label>По горизонтали (X)</label>
+            <input type="number" id="offsetX" value="0" min="-50" max="50" step="1">
+          </div>
+          <div>
+            <label>По вертикали (Y)</label>
+            <input type="number" id="offsetY" value="0" min="-50" max="50" step="1">
+          </div>
+        </div>
+        <div class="row">
+          <button type="button" class="btn-small" id="btnCenter" style="background:var(--border);color:var(--text)">Отцентровать</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Управление</h2>
+        <div class="row">
+          <button class="btn-show" id="btnShow">Показать</button>
+          <button class="btn-hide" id="btnHide">Скрыть</button>
+          <button class="btn-primary" id="btnSave">Применить</button>
+        </div>
+        <p class="status" id="status"></p>
+      </div>
+    </aside>
+
+    <main class="right">
+      <p class="preview-label">Превью 16:9 — как будет в vMix</p>
+      <div class="preview-wrap">
+        <iframe id="previewFrame" src="/output" title="Превью титров"></iframe>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const presetsList = document.getElementById('presetsList');
+    const presetsEmpty = document.getElementById('presetsEmpty');
+    const presetName = document.getElementById('presetName');
+    const btnSavePreset = document.getElementById('btnSavePreset');
+    const line1 = document.getElementById('line1');
+    const line2 = document.getElementById('line2');
+    const line3 = document.getElementById('line3');
+    const graphic = document.getElementById('graphic');
+    const style = document.getElementById('style');
+    const animation = document.getElementById('animation');
+    const offsetX = document.getElementById('offsetX');
+    const offsetY = document.getElementById('offsetY');
+    const graphicOffsetX = document.getElementById('graphicOffsetX');
+    const graphicOffsetY = document.getElementById('graphicOffsetY');
+    const graphicScale = document.getElementById('graphicScale');
+    const graphicAlign = document.getElementById('graphicAlign');
+    const fontFamily = document.getElementById('fontFamily');
+    const btnShow = document.getElementById('btnShow');
+    const btnHide = document.getElementById('btnHide');
+    const btnSave = document.getElementById('btnSave');
+    const status = document.getElementById('status');
+    const previewFrame = document.getElementById('previewFrame');
+
+    function showStatus(msg, isErr) {
+      status.textContent = msg;
+      status.classList.toggle('err', isErr);
+      if (msg) setTimeout(() => { status.textContent = ''; }, 3000);
+    }
+
+    function getData(visible) {
+      const data = {
+        line1: line1.value.trim(),
+        line2: line2.value.trim(),
+        line3: line3.value.trim(),
+        graphic: graphic.value.trim(),
+        style: style.value,
+        animation: animation.value,
+        offsetX: parseInt(offsetX.value, 10) || 0,
+        offsetY: parseInt(offsetY.value, 10) || 0,
+        graphicOffsetX: parseInt(graphicOffsetX.value, 10) || 0,
+        graphicOffsetY: parseInt(graphicOffsetY.value, 10) || 0,
+        graphicScale: parseInt(graphicScale.value, 10) || 100,
+        graphicAlign: graphicAlign.value,
+        fontFamily: fontFamily.value
+      };
+      if (visible !== undefined) data.visible = visible;
+      return data;
+    }
+
+    function loadPresets() {
+      fetch('/api/presets')
+        .then(r => r.json())
+        .then(list => {
+          presetsList.innerHTML = '';
+          if (list.length === 0) {
+            presetsEmpty.style.display = 'block';
+            return;
+          }
+          presetsEmpty.style.display = 'none';
+          list.forEach(p => {
+            const li = document.createElement('li');
+            li.innerHTML = '<span class="name">' + escapeHtml(p.name) + '</span><div class="actions"><button class="btn-primary btn-small btn-load" data-id="' + escapeHtml(p.id) + '">Загрузить</button><button class="btn-small btn-del" data-id="' + escapeHtml(p.id) + '" style="background:var(--red);color:#fff">Удалить</button></div>';
+            presetsList.appendChild(li);
+          });
+          presetsList.querySelectorAll('.btn-load').forEach(btn => {
+            btn.addEventListener('click', () => loadPreset(btn.dataset.id, list));
+          });
+          presetsList.querySelectorAll('.btn-del').forEach(btn => {
+            btn.addEventListener('click', () => deletePreset(btn.dataset.id));
+          });
+        })
+        .catch(() => {});
+    }
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function loadPreset(id, list) {
+      const p = list ? list.find(x => x.id === id) : null;
+      if (!p) {
+        fetch('/api/presets').then(r => r.json()).then(list => loadPreset(id, list));
+        return;
+      }
+      line1.value = p.line1 || '';
+      line2.value = p.line2 || '';
+      line3.value = p.line3 || '';
+      graphic.value = p.graphic || '';
+      style.value = p.style || 'lower';
+      animation.value = p.animation || 'fade';
+      offsetX.value = p.offsetX != null ? p.offsetX : 0;
+      offsetY.value = p.offsetY != null ? p.offsetY : 0;
+      graphicOffsetX.value = p.graphicOffsetX != null ? p.graphicOffsetX : 0;
+      graphicOffsetY.value = p.graphicOffsetY != null ? p.graphicOffsetY : 0;
+      graphicScale.value = p.graphicScale != null ? p.graphicScale : 100;
+      graphicAlign.value = p.graphicAlign || 'center';
+      fontFamily.value = p.fontFamily || 'Segoe UI, Arial, sans-serif';
+      applyToOutput(getData(true));
+      showStatus('Заготовка загружена.', false);
+    }
+
+    function deletePreset(id) {
+      if (!confirm('Удалить эту заготовку?')) return;
+      fetch('/api/presets?id=' + encodeURIComponent(id), { method: 'DELETE' })
+        .then(() => { loadPresets(); showStatus('Удалено.', false); })
+        .catch(() => showStatus('Ошибка.', true));
+    }
+
+    function applyToOutput(data) {
+      fetch('/api/titres', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+        .then(r => r.json())
+        .then(() => {})
+        .catch(() => {});
+    }
+
+    btnSavePreset.addEventListener('click', () => {
+      const name = presetName.value.trim() || 'Без названия';
+      const data = getData();
+      data.name = name;
+      fetch('/api/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+        .then(r => {
+          if (!r.ok) return r.json().then(j => Promise.reject(j));
+          return r.json();
+        })
+        .then(() => {
+          loadPresets();
+          presetName.value = '';
+          showStatus('Заготовка сохранена.', false);
+        })
+        .catch(err => showStatus((err && (err.error || err.detail)) ? (err.error || err.detail) : 'Ошибка сохранения.', true));
+    });
+
+    document.getElementById('btnCenter').addEventListener('click', () => {
+      offsetX.value = '0';
+      offsetY.value = '0';
+      applyToOutput(getData());
+      showStatus('Отцентровано.', false);
+    });
+
+    document.getElementById('btnCenterGraphic').addEventListener('click', () => {
+      graphicOffsetX.value = '0';
+      graphicOffsetY.value = '0';
+      graphicScale.value = '100';
+      graphicAlign.value = 'center';
+      applyToOutput(getData());
+      showStatus('Графика отцентрована.', false);
+    });
+
+    btnSave.addEventListener('click', () => {
+      applyToOutput(getData(true));
+      showStatus('Применено.', false);
+    });
+    btnShow.addEventListener('click', () => {
+      applyToOutput(getData(true));
+      showStatus('Показано.', false);
+    });
+    btnHide.addEventListener('click', () => {
+      fetch('/api/visible', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visible: false })
+      })
+        .then(() => showStatus('Скрыто.', false))
+        .catch(() => showStatus('Ошибка.', true));
+    });
+
+    [style, animation, offsetX, offsetY, graphicOffsetX, graphicOffsetY, graphicScale, graphicAlign, fontFamily].forEach(el => {
+      if (el) el.addEventListener('change', () => applyToOutput(getData()));
+    });
+    [offsetX, offsetY, graphicOffsetX, graphicOffsetY, graphicScale].forEach(el => {
+      if (el) el.addEventListener('input', () => applyToOutput(getData()));
+    });
+
+    fetch('/api/titres')
+      .then(r => r.json())
+      .then(data => {
+        line1.value = data.line1 || '';
+        line2.value = data.line2 || '';
+        line3.value = data.line3 || '';
+        graphic.value = data.graphic || '';
+        style.value = data.style || 'lower';
+        animation.value = data.animation || 'fade';
+        offsetX.value = data.offsetX != null ? data.offsetX : 0;
+        offsetY.value = data.offsetY != null ? data.offsetY : 0;
+        graphicOffsetX.value = data.graphicOffsetX != null ? data.graphicOffsetX : 0;
+        graphicOffsetY.value = data.graphicOffsetY != null ? data.graphicOffsetY : 0;
+        graphicScale.value = data.graphicScale != null ? data.graphicScale : 100;
+        graphicAlign.value = data.graphicAlign || 'center';
+        fontFamily.value = data.fontFamily || 'Segoe UI, Arial, sans-serif';
+      })
+      .catch(() => {});
+
+    loadPresets();
+  </script>
+</body>
+</html>

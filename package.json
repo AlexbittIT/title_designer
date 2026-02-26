@@ -1,0 +1,13 @@
+{
+  "name": "tittle-vmix",
+  "version": "1.0.0",
+  "description": "Локальная система титров для вывода в vMix",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
